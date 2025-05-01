@@ -1,24 +1,27 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 import instaloader
 
 app = Flask(__name__)
-CORS(app)
 
-@app.route('/download-image', methods=['POST'])
-def download_image():
-    data = request.get_json()
-    username = data.get('username')
+@app.route('/get_profile_pic', methods=['GET'])
+def get_profile_pic():
+    username = request.args.get('username')
     if not username:
-        return jsonify({'error': 'Username is required'}), 400
-
+        return jsonify({"error": "Username is required"}), 400
+    
+    # Initialize Instaloader instance
+    loader = instaloader.Instaloader()
+    
     try:
-        loader = instaloader.Instaloader()
+        # Load the Instagram profile
         profile = instaloader.Profile.from_username(loader.context, username)
+        # Get the URL of the profile picture
         profile_pic_url = profile.profile_pic_url
-        return jsonify({'image_url': profile_pic_url})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        
+        return jsonify({"profile_pic_url": profile_pic_url})
+    
+    except instaloader.exceptions.InstaloaderException as e:
+        return jsonify({"error": "Could not fetch profile picture. " + str(e)}), 500
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
